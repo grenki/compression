@@ -214,6 +214,8 @@ def compress():
     # Load the latest model checkpoint, get the compressed string and the tensor
     # shapes.
     latest = tf.train.latest_checkpoint(checkpoint_dir=args.checkpoint_dir)
+    print(latest)
+    # latest
     tf.train.Saver().restore(sess, save_path=latest)
     string, x_shape, y_shape = sess.run([string, tf.shape(x), tf.shape(y)])
 
@@ -250,6 +252,8 @@ def decompress():
 
   y_shape = [int(s) for s in y_shape] + [args.num_filters]
 
+  p = tf.constant(np.zeros([1, 256, 256, 3]), dtype=tf.float32)
+  analysis_transform(p, args.num_filters)
   # Add a batch dimension, then decompress and transform the image back.
   strings = tf.expand_dims(string, 0)
   entropy_bottleneck = tfc.EntropyBottleneck(dtype=tf.float32)
@@ -259,7 +263,7 @@ def decompress():
 
   # Remove batch dimension, and crop away any extraneous padding on the bottom
   # or right boundaries.
-  x_hat = x_hat[0, :x_shape[0], :x_shape[1], :]
+  x_hat = x_hat[0, :int(x_shape[0]), :int(x_shape[1]), :]
 
   # Write reconstructed image out as a PNG file.
   op = save_image(args.output, x_hat)
@@ -267,6 +271,7 @@ def decompress():
   # Load the latest model checkpoint, and perform the above actions.
   with tf.Session() as sess:
     latest = tf.train.latest_checkpoint(checkpoint_dir=args.checkpoint_dir)
+    print('ckpt', latest)
     tf.train.Saver().restore(sess, save_path=latest)
     sess.run(op)
 
